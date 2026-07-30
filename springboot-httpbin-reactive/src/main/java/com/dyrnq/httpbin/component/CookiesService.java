@@ -1,6 +1,5 @@
 package com.dyrnq.httpbin.component;
 
-import cn.hutool.core.util.URLUtil;
 import org.json.JSONObject;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -52,11 +51,11 @@ public class CookiesService extends ReactiveBaseService {
         return drainBody(exchange)
                 .then(Mono.fromRunnable(() ->
                         request.getQueryParams().forEach((name, values) -> {
-                            // Each (name, value) becomes a Set-Cookie header
+                            // Each (name, value) becomes a Set-Cookie header.
+                            // addSetCookie() already URL-encodes via URLUtil.encode,
+                            // so we pass the raw name/value here.
                             for (String value : values) {
-                                addSetCookie(exchange.getResponse(),
-                                        URLUtil.encode(name),
-                                        URLUtil.encode(value));
+                                addSetCookie(exchange.getResponse(), name, value);
                             }
                         })))
                 .then(redirectTo(exchange, "/cookies"));
@@ -69,9 +68,8 @@ public class CookiesService extends ReactiveBaseService {
     public Mono<Void> cookiesSet(ServerWebExchange exchange, String name, String value) {
         return drainBody(exchange)
                 .then(Mono.fromRunnable(() ->
-                        addSetCookie(exchange.getResponse(),
-                                URLUtil.encode(name),
-                                URLUtil.encode(value))))
+                        // addSetCookie() URL-encodes internally; pass raw name/value.
+                        addSetCookie(exchange.getResponse(), name, value)))
                 .then(redirectTo(exchange, "/cookies"));
     }
 
@@ -89,8 +87,8 @@ public class CookiesService extends ReactiveBaseService {
                     // exposes a unique key set).
                     Set<String> names = new HashSet<>(request.getQueryParams().keySet());
                     for (String name : names) {
-                        clearSetCookie(exchange.getResponse(),
-                                URLUtil.encode(name));
+                        // clearSetCookie() URL-encodes internally; pass raw name.
+                        clearSetCookie(exchange.getResponse(), name);
                     }
                 }))
                 .then(redirectTo(exchange, "/cookies"));
