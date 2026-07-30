@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel in-flight runs of the same workflow on the same branch
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & test (servlet + reactive)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Show Java environment
+        run: env | grep -E '^(JAVA|HOME|PATH)'
+
+      - name: Install smoke-test tools (brotli, jq)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends brotli jq
+
+      # ----------------------------------------------------------------
+      # 1. Unit tests for both modules
+      # ----------------------------------------------------------------
+      - name: Run unit tests
+        run: mvn -B -ntp test
+
+      # ----------------------------------------------------------------
+      # 2. Build executable jars (skip tests, already ran)
+      #    Use the same module names from the root pom.
+      #    We package a fat jar via spring-boot-maven-plugin.
+      # ----------------------------------------------------------------
+      - name: Build servlet jar (tomcat)
+        run: mvn -B -ntp -DskipTests -pl :springboot-httpbin -am package
+
+      - name: Build reactive jar
+        run: mvn -B -ntp -DskipTests -pl :springboot-httpbin-reactive -am package
+
+      - name: Verify jars exist
+        run: |
+          set -e
+          ls -la springboot-httpbin/target/*.jar
+          ls -la springboot-httpbin-reactive/target/*.jar
+
+      # ----------------------------------------------------------------
+      # 3. Start both apps in the background and run smoke tests.
+      #    Logs are captured so they can be uploaded on failure.
+      # ----------------------------------------------------------------
+      - name: Start servlet app
+        env:
+          SERVER_PORT: '8080'
+        run: |
+          mkdir -p target
+          JAR=$(ls springboot-httpbin/target/springboot-httpbin-*.jar | grep -v '\.original$' | head -n1)
+          echo "Starting servlet jar: $JAR"
+          nohup java -jar "$JAR" > target/app-servlet.log 2>&1 &
+          echo $! > target/app-servlet.pid
+
+      - name: Start reactive app
+        env:
+          SERVER_PORT: '8081'
+        run: |
+          mkdir -p target
+          JAR=$(ls springboot-httpbin-reactive/target/springboot-httpbin-reactive-*.jar | grep -v '\.original$' | head -n1)
+          echo "Starting reactive jar: $JAR"
+          nohup java -jar "$JAR" > target/app-reactive.log 2>&1 &
+          echo $! > target/app-reactive.pid
+
+      - name: Wait for both apps to be ready
+        run: |
+          for port in 8080 8081; do
+            echo "Probing http://127.0.0.1:${port}/ip ..."
+            curl --retry 30 --retry-connrefused --retry-delay 1 --max-time 2 -fsS -o /dev/null \
+              "http://127.0.0.1:${port}/ip"
+          done
+
+      - name: Run smoke tests
+        id: smoke
+        run: bash scripts/smoke.sh 8080 8081
+
+      # ----------------------------------------------------------------
+      # 4. Always upload logs and always kill background processes.
+      # ----------------------------------------------------------------
+      - name: Upload app logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-logs
+          path: |
+            target/app-servlet.log
+            target/app-reactive.log
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Stop background apps
+        if: always()
+        run: |
+          for pidfile in target/app-servlet.pid target/app-reactive.pid; do
+            if [ -f "$pidfile" ]; then
+              pid=$(cat "$pidfile")
+              if kill -0 "$pid" 2>/dev/null; then
+                echo "Killing PID $pid ($pidfile)"
+                kill "$pid" || true
+                # wait a moment, then force
+                sleep 2
+                kill -9 "$pid" 2>/dev/null || true
+              fi
+              rm -f "$pidfile"
+            fi
+          done
+
+      - name: Smoke test summary
+        if: always()
+        run: |
+          if [ "${{ steps.smoke.conclusion }}" = "success" ]; then
+            echo "✅ Smoke tests passed for both modules"
+          else
+            echo "❌ Smoke tests failed — check app-logs artifact for details"
+            exit 1
+          fi
