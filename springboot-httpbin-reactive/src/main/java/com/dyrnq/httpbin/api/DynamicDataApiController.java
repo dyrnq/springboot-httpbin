@@ -1,34 +1,99 @@
 package com.dyrnq.httpbin.api;
 
-import java.math.BigDecimal;
-
-
+import com.dyrnq.httpbin.component.DynamicDataService;
+import jakarta.annotation.Generated;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
-import jakarta.validation.constraints.*;
-import jakarta.validation.Valid;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import jakarta.annotation.Generated;
+import java.math.BigDecimal;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.9.0-SNAPSHOT")
 @Controller
 @RequestMapping("${openapi.springboot-httpbin.base-path:}")
 public class DynamicDataApiController implements DynamicDataApi {
 
+    @Autowired
+    DynamicDataService dynamicDataService;
+
+    @Override
+    public Mono<ResponseEntity<Void>> base64ValueGet(String value, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.base64(exchange, value);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> bytesNGet(Integer n, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.bytes(exchange, n);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> delayDelayDelete(Integer delay, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.delay(exchange, delay);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> delayDelayGet(Integer delay, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.delay(exchange, delay);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> delayDelayPatch(Integer delay, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.delay(exchange, delay);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> delayDelayPost(Integer delay, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.delay(exchange, delay);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> delayDelayPut(Integer delay, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.delay(exchange, delay);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> dripGet(BigDecimal duration, Integer numbytes, Integer code, BigDecimal delay, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.drip(exchange, duration, numbytes, code, delay);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> linksNOffsetGet(Integer n, Integer offset, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.links(exchange, n, offset);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> rangeNumbytesGet(Integer numBytes, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.range(exchange, numBytes);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> streamBytesNGet(Integer n, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.streamByte(exchange, n);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> streamNGet(Integer n, ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.stream(exchange, n);
+        return result.then(Mono.empty());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Void>> uuidGet(ServerWebExchange exchange) throws Exception {
+        Mono<Void> result = dynamicDataService.uuid(exchange);
+        return result.then(Mono.empty());
+    }
 }
