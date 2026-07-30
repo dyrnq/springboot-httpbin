@@ -4,7 +4,7 @@
     <artifactId>springboot-httpbin-root</artifactId>
     <packaging>pom</packaging>
     <name>springboot-httpbin-root</name>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <properties>
         <java.version>17</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
